@@ -7,9 +7,16 @@ from flask import (
     request,
     session,
     url_for,
+    Response,
+    json,
+    jsonify
 )
+
+
 from flaskext.mysql import MySQL
 import os, subprocess
+import collections
+import uuid
 
 mysql = MySQL()
 app = Flask(__name__)
@@ -17,8 +24,8 @@ app = Flask(__name__)
 #DATABASE = '/tmp/quiltview.db'
 DEBUG = True
 SECRET_KEY = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
-STREAM_SERVER_IP = '127.0.0.1'
 STREAM_SERVER = 'vm005.elijah.cs.cmu.edu'
+STREAM_SERVER_IP = '127.0.0.1'
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
 app.config['MYSQL_DATABASE_DB'] = 'quiltview'
@@ -39,6 +46,45 @@ def showHome():
 	else:
 		return render_template('login.html')
 
+@app.route('/submit-query', methods = ['POST'])
+def submitQuery():
+	if request.method == 'POST':
+		query = request.form['query']
+		print query
+    		cursor = mysql.connect().cursor()
+    		queryString = "select a.query_id, a.query_item, b.stream_id, b.is_stream_active, b.rtmp_url from queries a inner join live_streams b on a.query_id = b.query_id where is_stream_active=true and a.query_item='%s'" % (query);
+    		cursor.execute(queryString)
+    		if cursor.fetchone() is None:
+	 		#insert to query table check value of no_subscribers update only play event is received from nginx
+	 		queryString = "INSERT into queries(query_item, no_active_streamers, no_subscribers) VALUES('%s','%s', %s);" % (query, 0,0)
+    			cursor.execute(queryString)
+    		 	cursor.connection.commit()
+    		 	data = 	{"message":"Please check back in a couple of minutes", "status":200, "count" : 0}
+			resp = json.dumps(data)
+			return resp
+    		else:
+    			# commenting subscriber count update if query is already present in the database
+    			#querySet = cursor.fetchone();
+    			streamList = generateJsonForQueries(cursor)
+    			#queryString  = "update queries set no_subscribers = no_subscribers +1 where query_id=%s;" %(querySet[0])
+    			#cursor.execute(queryString)
+    			#cursor.connection.commit()
+    			
+	    		if streamList:
+		    		resp = json.dumps({"queries": streamList, "count": len(streamList), "status": 200})
+				#print resp
+				return resp
+	#			return render_template('home.html', data=resp, empty=None)
+			else:
+				data = 	{"message":"list is empty", "status":200, "count" : 0}
+				resp = json.dumps(data)
+	#			resp = jsonify(data)
+				#resp.status_code = 200;
+				#resp.mimetype = "application/json"	     	
+				return resp
+	#		return render_template('home.html', data=None, empty=data)
+		
+    		 
 @app.route('/signup', methods=['GET','POST'])
 def signup():
 	error = None
@@ -51,7 +97,7 @@ def signup():
 		cursor.execute("SELECT * from User where username='" + username + "' and password='" + password + "'")
     		data = cursor.fetchone()
 		if data is None:
-			query = "INSERT into User(username, password, firstname, lastname) VALUES('%s','%s','%s','%s');" % (username, password, firstname, 				lastname)
+			query = "INSERT into User(username, password, firstname, lastname) VALUES('%s','%s','%s','%s');" % (username, password, firstname,lastname)
 			cursor.execute(query)
     		 	cursor.connection.commit()
     			cursor.close()
@@ -62,7 +108,7 @@ def signup():
 		     	flash('User already exists')
 			return render_template('login.html', error=error)	
 	return render_template('signup.html', error=error)
-
+		
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 	error = None
@@ -80,24 +126,231 @@ def login():
 			return redirect(url_for('showHome'))
      	return render_template('login.html', error=error)
 
-def call_command(command):
-    f = open('/dev/null','rw')
-    subprocess.Popen(command.split(' '))
+def errorResponse(message = None, status = None):
+	data = {}
+	if message is None:
+		data["message"] = "missing headers" 
+	else:
+		data["message"] = message 	
 
-@app.route('/stream')
-def stream():
-	ip = request.remote_addr
-	ip = "128.237.221.39:1234"
-	#call_command("avconv -i rtsp://%s:1234 -ar 44100 -f flv rtmp://127.0.0.1:1935/mytv/vinay-phone" % (ip))
-	call_command("avconv -i rtsp://%s -ar 44100 -r 30 -vsync cfr -q 30 -fflags nobuffer -f flv rtmp://%s:1935/mytv/vinay-phone" % (ip, STREAM_SERVER_IP))
-	return render_template('index.html', stream_name="vinay-phone", stream_url="rtmp://%s:1935/mytv/" % (STREAM_SERVER))
+	if status is None:
+		data["status"] = "404"
+		status = 404;
+	else:
+		data["status"] = status
+			
 
-@app.route('/count-subscribers', methods = ['POST'])
+	resp = jsonify(data)
+	resp.status_code = status; 
+	resp.mimetype = "application/json"
+	return resp
+
+def createPostReplyResponse(message = None, id = None):
+	data = {}
+	if message is None:
+		data["message"] = "start streaming" 
+	else:
+		data["message"] = message 	
+	
+	if id is not None:
+		data["id"] = id
+	
+	data["status"] = 200
+	resp = jsonify(data)
+	resp.status_code = 200;
+	resp.mimetype = "application/json"
+	return resp
+	
+def checkRequestHeaders(checkContentType = None):
+	
+	if "device_type" in request.headers: 
+		devid = request.headers['device_type']
+		contentType = None
+		if "Content_Type" in request.headers:
+			contentType = request.headers['Content_Type']
+			
+		if (devid is None or not devid or len(devid) < 16) \
+			and ((checkContentType is not None and contentType != "application/x-www-form-urlencoded") \
+			or checkContentType is None):
+			return errorResponse()
+		else:
+			return None
+	else:
+		return errorResponse()
+		
+@app.route('/count-subscribers', methods = ['GET','POST'])
 def getNoSubscribers():
 	if request.method == 'POST':
-		print request.form
+		streamName = request.form['name']
+		callType = request.form['call']
+		streamUrl = "rtmp://%s:1935/mytv/%s" % (STREAM_SERVER, streamName)
+		sreamId = "SELECT query_id FROM live_streams WHERE rtmp_url='%s';" %(streamUrl)
+		if callType == "play":
+			queryString  = "UPDATE queries SET no_subscribers = no_subscribers +1 WHERE query_id=(%s);" %(streamId)
+		else:
+			queryString  = "UPDATE queries SET no_subscribers = no_subscribers -1 WHERE query_id=(%s);" %(streamId)
+		cursor = mysql.connect().cursor()
+		cursor.execute(query)	
+		cursor.connection.commit()
+		return ""
+	elif request.method == 'GET':
+		val = checkRequestHeaders("true")
+		if val is not None:		
+			return val
+		else:
+			query_id = request.args['qid']
+			queryString = "SELECT * FROM queries WHERE query_id=%s;" %(query_id) 	
+			cursor = mysql.connect().cursor()
+			cursor.execute(queryString)
+			data = generateJsonForQueries(cursor)
+			resp = jsonify({"data": data, "status": 200})
+			resp.status_code = 200
+			resp.mimetype = "application/json"		
+			return resp
+				
+			
+@app.route('/quit-stream', methods = ['POST'])
+def quitStream():
+	val = checkRequestHeaders("true")
+	if val is not None:		
+		return val
+	
+	if request.method == 'POST':
+		queryId = request.form['query_id']
+		streamId = request.form['stream_id']
+		if queryId is not None and streamId is not None:
+			resp = Response(response=None, status=204, mimetype=None)
+			cursor = mysql.connect().cursor()
+			query = "SELECT pid FROM live_streams WHERE stream_id=%s" % (streamId)
+			cursor.execute(query)
+			pid = cursor.fetchone()[0]
+			print "pid", pid
+			killFFMPEG(pid)	
+			query = "UPDATE queries SET no_active_streamers = no_active_streamers-1 WHERE query_id = '" + queryId + "';"
+			cursor.execute(query)	
+			cursor.connection.commit()
+			query  = "SELECT no_active_streamers FROM queries WHERE query_id = %s;" % (queryId)
+			cursor.execute(query)
+			streamersCount = cursor.fetchone()
+			if streamersCount is not None:
+				 count = streamersCount[0]
+				 if count <= 0:
+				 	# set stream active bit to 0 when no of streamers is 0 and set no_subscribers to 0 for this case as well
+				 	query = "UPDATE live_streams SET is_stream_active = 0 WHERE stream_id = '" + streamId + "';"
+				 	cursor.execute(query)	
+					cursor.connection.commit()
+					query  = "UPDATE queries SET no_subscribers = 0 WHERE query_id = %s;" % (queryId)
+					cursor.execute(query)	
+					cursor.connection.commit()	
+			return resp 
+		else:	
+			return errorResponse("Invalid ID", 200)
 
-	return ""
+		
+@app.route('/post-reply', methods = ['POST'])
+def postReply():
+
+	val = checkRequestHeaders("true")
+	if val is not None:		
+		return val
+	
+	ip = request.remote_addr		
+	if request.method == 'POST':
+		queryId = request.form['query_id']
+		queryStatus = request.form['query_status']
+		if queryStatus is not None and queryId is not None:
+			if queryStatus == "true":
+				streamId = updateLiveStreamers(ip, queryId)
+				if streamId > 0:
+					return createPostReplyResponse(streamId)			
+			
+			else:	
+				resp = Response(response=None, status=204, mimetype=None)
+				return resp
+					
+		else:	
+			return errorResponse()
+			
+		
+		
+def updateLiveStreamers(ip, queryId):
+	rtsp_url = "rtsp://%s:1234"  % (ip)
+	# add stream id to generate unique url
+	rtmp_url = "rtmp://%s:1935/mytv/%s" % (STREAM_SERVER, uuid.uuid4())
+	print rtsp_url
+	print rtmp_url
+	cursor = mysql.connect().cursor()
+	query = "UPDATE queries SET no_active_streamers = no_active_streamers+1 Where query_id = '" + queryId + "';"
+	cursor.execute(query)	
+	cursor.connection.commit()
+	if cursor.rowcount == 1: 
+		#start FFMPEG
+		pid = initiateFFMPEG(rtsp_url, rtmp_url)
+		query = "INSERT into live_streams(query_id, rtmp_url, rtsp_url, is_stream_active, pid) VALUES('%s','%s','%s','%s', '%s');" % 			(queryId, rtmp_url, rtsp_url, 1, pid)
+		cursor.execute(query)
+    		cursor.connection.commit()
+    		query  = "SELECT stream_id from live_streams where query_id = %s and pid = %s ORDER BY stream_id LIMIT 1" % (queryId, pid)
+    		cursor.execute(query)
+    		data = cursor.fetchone()
+    		return data[0]
+		
+	cursor.close()
+	return "0"
+
+@app.route('/get-queries', methods = ['GET'])
+def getQueries():
+	
+ 	val = checkRequestHeaders()
+ 	if val is not None:		
+		return val
+		
+	cursor = mysql.connect().cursor()
+	cursor.execute("SELECT * from queries where TIME_TO_SEC(timediff(now(),timestamp))<=%s;" %(20))
+	queryList = generateJsonForQueries(cursor)    	
+	if queryList:
+		#resp = Response(json.dumps(queryList), status=200, mimetype='application/json')
+		resp = jsonify({"queries": queryList, "count": len(queryList), "status": 200})
+		resp.status_code = 200
+		resp.mimetype = "application/json"		
+		return resp
+	else:
+		data = 	{"message":"list is empty", "status":200, "count" : 0}
+		resp = jsonify(data)
+		resp.status_code = 200;
+		resp.mimetype = "application/json"	     	
+		#resp = Response(json.dumps(data), status=200, mimetype='application/json')
+		return resp
+		
+
+def generateJsonForQueries(data):
+	contentList = []
+	desc = data.description
+	for value in data:
+            objectDict = collections.OrderedDict()
+	    for (name, tupleValue) in zip(desc,value):
+		    objectDict[name[0]] = tupleValue
+	    #d['search_query'] = row.query_item
+	    #d['no_of_active_streamers'] = row.no_active_streamers
+	    contentList.append(objectDict)
+
+	return contentList		
+	
+def killFFMPEG(pid):
+	os.kill(int(pid), 9)
+
+def call_command(command):
+	return    subprocess.Popen(command.split(' ')).pid
+		
+def initiateFFMPEG(rtsp_url, rtmp_url):
+	return call_command("avconv -i %s -ar 44100 -f flv %s" % (rtsp_url, rtmp_url))
+		
+@app.route('/stream')
+def stream(rtsp_url, rtmp_url):
+	#ip = request.remote_addr
+	#ip = "128.237.209.240:1234"
+	call_command("avconv -i %s -ar 44100 -f flv %s" % (rtsp_url, rtmp_url))
+	#call_command("avconv -i rtsp://%s -ar 44100 -r 30 -vsync cfr -q 30 -fflags nobuffer -f flv rtmp://%s:1935/mytv/vinay-phone" % (ip, STREAM_SERVER))
+	return render_template('index.html', stream_name="vinay-phone", stream_url="rtmp://%s:1935/mytv/" % (STREAM_SERVER))
 
 @app.route('/logout')
 def logout():

@@ -1,14 +1,51 @@
 {% extends "layout.html" %}
 {% block body %}
   {% if session.logged_in %}
-    <form method=get class=add-entry action="{{ url_for('stream') }}">
+    <!--<form method=post class=add-entry action="{{ url_for('submitQuery') }}">
+    <form method=post class=add-entry>-->
         <h1>Welcome to Quilt View++</h1>
         <dl>
-        <dt>Whats your Query:
-        <dd><input type=text name=query>
-        <dd><input type=submit value=Submit>
+        <dt>Whats your Query:</dt>
+        </br>
+        <dd><input type=text name=query id="query">
+        </br></br>
+        <dd><input type=submit value=Submit id="submitButton">
       </dl>
-    </form>
-  {% endif %}
-  
+      
+      <div id ="table-block"> </div>
+                <!--</form>-->
+	<script>
+	
+	$('#submitButton').on('click',function(){
+		//alert($('#query').val());
+		$.post('{{ url_for('submitQuery') }}',{query:$('#query').val()},function(data){
+		console.log(data);
+			
+		
+		var parsedData = $.parseJSON(data);
+		if(parsedData.count == 0)
+		{
+			var text = parsedData.message;
+			$('#table-block').html('<p id="message"></p>');
+			$('#message').append(text)	
+		}
+		else
+		{
+		
+		$('#table-block').html('<table id="query-list"><thead><tr><th>Query</th><th>Stream ID</th></tr></thead><tbody></tbody></table>');
+		$('#query-list > tbody:last').html('<tbody></tbody>');
+			$.each(parsedData.queries,function(i,item){
+			    $('#query-list > tbody:last').append('<tr><td>'+item.query_item+'</td><td>'+item.rtmp_url+'</td></tr>');
+			  });
+			
+		}
+			
+		});	
+		
+	});
+	
+	
+	</script>
+    {% endif %}
+    
 {% endblock %}
