@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if session.logged_in %}
+    <form method=get class=add-entry action="{{ url_for('stream') }}">
+        <h1>Welcome to Quilt View++</h1>
+        <dl>
+        <dt>Whats your Query:
+        <dd><input type=text name=query>
+        <dd><input type=submit value=Submit>
+      </dl>
+    </form>
+  {% endif %}
+  
+{% endblock %}

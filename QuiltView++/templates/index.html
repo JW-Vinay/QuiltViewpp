@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>QuiltView++ Stream</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='yendifplayer.css') }}"/>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+        <script src="{{ url_for('static', filename='js/yendifplayer.js') }}"></script>
+    </head>
+
+    <body>
+        <div class="yendifplayer">
+            <video>
+                <source type="video/flash"
+                        src="{{ stream_name }}"
+                        data-rtmp="{{ stream_url }}">
+            </video>
+        </div>
+
+        <!-- global options -->
+        <script>
+            yendifplayer.config = {
+                                    swf: "{{ url_for('static', filename='swf/player.swf') }}"
+                                  };
+        </script>
+    </body>
+</html>

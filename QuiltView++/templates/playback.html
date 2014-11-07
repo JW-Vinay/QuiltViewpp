@@ -1,0 +1,64 @@
+<!doctype html>
+
+<head>
+
+   <!-- player skin -->
+   <link rel=stylesheet type=text/css href="{{ url_for('static', filename='minimalist.css') }}">	
+   <!-- site specific styling -->
+   <style>
+   body { font: 12px "Myriad Pro", "Lucida Grande", sans-serif; text-align: center; padding-top: 5%; }
+   .flowplayer { width: 80%; }
+   </style>
+
+   <!-- flowplayer depends on jQuery 1.7.1+ (for now) -->
+   <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	
+<script type="text/javascript" src="{{ url_for('static', filename='flowplayer-3.2.13.min.js') }}"></script>
+   <!-- include flowplayer 
+   <script src="{{ url_for('static', filename='flowplayer.min.js') }}"></script>-->
+
+</head>
+
+<body>
+
+   <!-- the player 
+   <div id="livestream" class="flowplayer" data-swf="{{ url_for('static', filename='flowplayer.swf') }}" data-ratio="0.4167">
+	    
+     </div>-->
+
+<div id="livestream" class="flowplayer" data-swf="{{ url_for('static', filename='flowplayer.swf') }}" data-ratio="0.4167" data-rtmp= "{{ stream_url }}">
+	    <video>
+		<source type="video/flash" src="flv:{{ stream_name }}">
+		</video>
+     </div>
+<script>
+flowplayer("player", "{{ url_for('static', filename='flowplayer-3.2.18.swf') }}");
+/*$(function ()
+{
+console.log('Hi --- flowplayer should load');
+
+$(".livestream").flowplayer({
+ 
+swf: "{{ url_for('static', filename='flowplayer.swf') }}",
+    clip: {
+        url: '{{ stream_name }}',
+        live: true,
+        // configure clip to use influxis as our provider, it uses our rtmp plugin
+        provider: 'rtmp'
+    },
+ 
+    // streaming plugins are configured under the plugins node
+    plugins: {
+ 
+        // here is our rtpm plugin configuration
+        rtmp: {
+            url: "{{ url_for('static', filename='flowplayer.rtmp-3.2.13.swf') }}",
+ 
+            // netConnectionUrl defines where the streams are found
+            netConnectionUrl: '{{ stream_url }}'
+        }
+    }
+});
+});*/
+ </script>
+</body>

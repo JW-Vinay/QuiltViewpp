@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h2>Sign Up</h2>
+<script  type="text/javascript">
+ function checkForm() 
+ { 	
+	console.log("Yo its working");
+	if(document.getElementById('uname').value == "") 
+	{ 
+		alert("Error: Username cannot be blank!"); 
+		document.getElementById('uname').focus(); 
+		return false; 
+	} 
+	re = /^\w+$/; 
+	if(!re.test(document.getElementById('uname').value)) 
+	{ 
+		alert("Error: Username must contain only letters, numbers and underscores!"); 
+		document.getElementById('uname').focus(); 
+		return false;
+	} 
+	if(document.getElementById('pwd').value != "" && document.getElementById('pwd').value != document.getElementById('cpwd').value) 
+	{ 
+		alert("Error: Please check that you've entered and confirmed your password!"); 
+		document.getElementById('pwd').focus(); 
+		return false; 
+	} 
+	return true; 
+ }  
+</script>
+
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+  <form action="{{ url_for('signup') }}" method=post onsubmit="return checkForm()">
+    <dl>
+      <dt>Username:
+      <dd><input type=text id=uname name=username required placeholder="Username">
+      <dt>Password:
+      <dd><input type=password id=pwd name=password required placeholder="Password">
+      <dt>Confirm Password:
+      <dd><input type=password id=cpwd name=confirmpwd required placeholder="Confirm Password">
+      <dt>First Name:
+      <dd><input type=text id=fname name=firstname required placeholder="First Name">
+      <dt>Last Name:
+      <dd><input type=text id=lname name=lastname required placeholder="Last Name">	 		
+      </br>
+      </br>
+      <dd><input type=submit value="Sign Up">
+    </dl>
+  </form>
+{% endblock %}
