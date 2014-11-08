@@ -344,13 +344,24 @@ def call_command(command):
 def initiateFFMPEG(rtsp_url, rtmp_url):
 	return call_command("avconv -i %s -ar 44100 -f flv %s" % (rtsp_url, rtmp_url))
 		
-@app.route('/stream')
-def stream(rtsp_url, rtmp_url):
+@app.route('/stream/<int:stream_id>')
+def stream(stream_id, rtmp_url=None, rtsp_url=None):
 	#ip = request.remote_addr
 	#ip = "128.237.209.240:1234"
-	call_command("avconv -i %s -ar 44100 -f flv %s" % (rtsp_url, rtmp_url))
+	#call_command("avconv -i %s -ar 44100 -f flv %s" % (rtsp_url, rtmp_url))
 	#call_command("avconv -i rtsp://%s -ar 44100 -r 30 -vsync cfr -q 30 -fflags nobuffer -f flv rtmp://%s:1935/mytv/vinay-phone" % (ip, STREAM_SERVER))
-	return render_template('index.html', stream_name="vinay-phone", stream_url="rtmp://%s:1935/mytv/" % (STREAM_SERVER))
+	cursor = mysql.connect().cursor()
+	queryString  = "SELECT rtmp_url from live_streams WHERE stream_id=%d" % (stream_id)
+	cursor.execute(queryString)
+	data  = cursor.fetchone();
+	print data
+	if data is not None:
+		streamName = rtmp_url[rtmp_url.rfind("/"):]
+		print streamName
+		#return render_template('index.html', stream_name="vinay-phone", stream_url="rtmp://%s:1935/mytv/" % (STREAM_SERVER))
+		return render_template('index.html', stream_name=streamName, stream_url=rtmp_url)
+	else:
+		return redirect(url_for('showHome')) 
 
 @app.route('/logout')
 def logout():

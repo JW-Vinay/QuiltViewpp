@@ -35,7 +35,10 @@
 		$('#table-block').html('<table id="query-list"><thead><tr><th>Query</th><th>Stream ID</th></tr></thead><tbody></tbody></table>');
 		$('#query-list > tbody:last').html('<tbody></tbody>');
 			$.each(parsedData.queries,function(i,item){
-			    $('#query-list > tbody:last').append('<tr><td>'+item.query_item+'</td><td>'+item.rtmp_url+'</td></tr>');
+				console.log(item.stream_id);
+				//alert(item.stream_id)
+				var x = item.stream_id;
+			    $('#query-list > tbody:last').append('<tr><td>'+item.query_item+'</td><td><a href="{{ url_for('stream',stream_id='+x+') }}">'+item.rtmp_url+'</a></td></tr>');
 			  });
 			
 		}
