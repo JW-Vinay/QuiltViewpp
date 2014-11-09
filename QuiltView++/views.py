@@ -14,6 +14,7 @@ from flask import (
 
 
 from flaskext.mysql import MySQL
+from MySQLdb import IntegrityError
 import os, subprocess
 import collections
 import uuid
@@ -51,38 +52,54 @@ def submitQuery():
 	if request.method == 'POST':
 		query = request.form['query']
 		print query
-    		cursor = mysql.connect().cursor()
-    		queryString = "select a.query_id, a.query_item, b.stream_id, b.is_stream_active, b.rtmp_url from queries a inner join live_streams b on a.query_id = b.query_id where is_stream_active=true and a.query_item='%s'" % (query);
-    		cursor.execute(queryString)
-    		if cursor.fetchone() is None:
-	 		#insert to query table check value of no_subscribers update only play event is received from nginx
-	 		queryString = "INSERT into queries(query_item, no_active_streamers, no_subscribers) VALUES('%s','%s', %s);" % (query, 0,0)
-    			cursor.execute(queryString)
-    		 	cursor.connection.commit()
-    		 	data = 	{"message":"Please check back in a couple of minutes", "status":200, "count" : 0}
-			resp = json.dumps(data)
-			return resp
-    		else:
-    			# commenting subscriber count update if query is already present in the database
-    			#querySet = cursor.fetchone();
-    			streamList = generateJsonForQueries(cursor)
-    			#queryString  = "update queries set no_subscribers = no_subscribers +1 where query_id=%s;" %(querySet[0])
-    			#cursor.execute(queryString)
-    			#cursor.connection.commit()
-    			
-	    		if streamList:
-		    		resp = json.dumps({"queries": streamList, "count": len(streamList), "status": 200})
-				#print resp
-				return resp
-	#			return render_template('home.html', data=resp, empty=None)
-			else:
-				data = 	{"message":"list is empty", "status":200, "count" : 0}
-				resp = json.dumps(data)
-	#			resp = jsonify(data)
-				#resp.status_code = 200;
-				#resp.mimetype = "application/json"	     	
-				return resp
-	#		return render_template('home.html', data=None, empty=data)
+		if (query is not None) and (query != ''):
+	    		cursor = mysql.connect().cursor()
+	    		queryString = "SELECT a.query_id, a.query_item, b.stream_id, b.is_stream_active, b.rtmp_url FROM queries a INNER JOIN live_streams b ON a.query_id = b.query_id WHERE is_stream_active=true and a.query_item='%s';" % (query)
+	    		cursor.execute(queryString)
+	    		if cursor.fetchone() is None:
+	    			#queryString  = "SELECT * FROM queries WHERE query_item='%s';" %(query)
+	    			#cursor.execute(queryString)
+	    			#if cursor.fetchone() is None:
+	    			
+		 		#insert to query table check value of no_subscribers update only play event is received from nginx
+		 		queryString = "INSERT into queries(query_item, no_active_streamers, no_subscribers) VALUES('%s','%s', %s);" % (query, 0,0)
+		 		try:
+		    			cursor.execute(queryString)
+		    		 	cursor.connection.commit()
+		    		 	data = 	{"message":"Waiting for response.", "status":200, "count" : 0}
+					resp = json.dumps(data)
+					#return resp						
+				except IntegrityError as e:
+					data = 	{"message":"Duplicate entry. Please try again.", "status":-1, "count" : 0}
+					resp = 	json.dumps(data)
+					#return resp
+			#else:
+			#	data = 	data = 	{"message":"Duplicate entry. Please try again", "status":-1, "count" : 0}
+			#		resp = json.dumps(data)		
+				return resp	
+	    		else:
+	    			# commenting subscriber count update if query is already present in the database
+	    			#querySet = cursor.fetchone();
+	    			streamList = generateJsonForQueries(cursor, "true")
+	    			#queryString  = "update queries set no_subscribers = no_subscribers +1 where query_id=%s;" %(querySet[0])
+	    			#cursor.execute(queryString)
+	    			#cursor.connection.commit()
+	    			
+		    		if streamList:
+			    		resp = json.dumps({"queries": streamList, "count": len(streamList), "status": 200})
+					#print resp
+					return resp
+		#			return render_template('home.html', data=resp, empty=None)
+				else:
+					data = 	{"message":"list is empty", "status":200, "count" : 0}
+					resp = json.dumps(data)
+		#			resp = jsonify(data)
+					#resp.status_code = 200;
+					#resp.mimetype = "application/json"	     	
+					return resp
+		#		return render_template('home.html', data=None, empty=data)
+		else:
+			return redirect(url_for('showHome'))	
 		
     		 
 @app.route('/signup', methods=['GET','POST'])
@@ -322,15 +339,16 @@ def getQueries():
 		return resp
 		
 
-def generateJsonForQueries(data):
+def generateJsonForQueries(data, isSubmit=None):
 	contentList = []
 	desc = data.description
 	for value in data:
             objectDict = collections.OrderedDict()
 	    for (name, tupleValue) in zip(desc,value):
 		    objectDict[name[0]] = tupleValue
-	    #d['search_query'] = row.query_item
-	    #d['no_of_active_streamers'] = row.no_active_streamers
+		    
+	    if isSubmit:
+		    objectDict["stream_url"] = url_for('stream', stream_id=objectDict['stream_id'])
 	    contentList.append(objectDict)
 
 	return contentList		
@@ -356,7 +374,8 @@ def stream(stream_id, rtmp_url=None, rtsp_url=None):
 	data  = cursor.fetchone();
 	print data
 	if data is not None:
-		streamName = rtmp_url[rtmp_url.rfind("/"):]
+		rtmp_url = data[0]
+		streamName = rtmp_url[rtmp_url.rfind("/")+1:]
 		print streamName
 		#return render_template('index.html', stream_name="vinay-phone", stream_url="rtmp://%s:1935/mytv/" % (STREAM_SERVER))
 		return render_template('index.html', stream_name=streamName, stream_url=rtmp_url)

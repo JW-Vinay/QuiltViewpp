@@ -4,7 +4,7 @@ h1, h2          { font-family: 'Georgia', serif; margin: 0; }
 h1              { border-bottom: 2px solid #eee; }
 h2              { font-size: 1.2em; }
 
-.page           { margin: 2em auto; width: 50%; border: 5px solid #ccc;
+.page           { position: relative; margin: 2em auto; width: 50%; border: 5px solid #ccc;
                   padding: 0.8em; background: white; }
 .entries        { list-style: none; margin: 0; padding: 0; }
 .entries li     { margin: 0.8em 1.2em; }
@@ -23,3 +23,5 @@ tbody 		{color:#377ba8;}
 table		{margin:2em auto;}
 table,th,td	{border:1px solid black;}
 td		{padding: 0.5em; font-size: 0.9em; color:#000000}
+
+#content 	{padding: 0.5em; margin: 1em auto; width: auto; position: relative; height:auto;}

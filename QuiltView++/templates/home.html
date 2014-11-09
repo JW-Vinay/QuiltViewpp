@@ -9,43 +9,148 @@
         </br>
         <dd><input type=text name=query id="query">
         </br></br>
-        <dd><input type=submit value=Submit id="submitButton">
+        <dd><input type=submit value=Submit id="submitButton" >
       </dl>
-      
+      <!--</form>-->
       <div id ="table-block"> </div>
-                <!--</form>-->
+      <div id="content"></div>          
 	<script>
+	var spinner;
+	var isSpinning = false;
+	var id  = -1;
+	var noOfAttempts = 0;
+	function initiateSpinner()
+	{
+		var opts = {
+		  lines: 13, // The number of lines to draw
+		  length: 13, // The length of each line
+		  width: 5, // The line thickness
+		  radius: 13, // The radius of the inner circle
+		  corners: 1, // Corner roundness (0..1)
+		  rotate: 90, // The rotation offset
+		  direction: 1, // 1: clockwise, -1: counterclockwise
+		  color: '#377ba8', // #rgb or #rrggbb or array of colors
+		  speed: 1, // Rounds per second
+		  trail: 52, // Afterglow percentage
+		  shadow: true, // Whether to render a shadow
+		  hwaccel: false, // Whether to use hardware acceleration
+		  className: 'spinner', // The CSS class to assign to the spinner
+		  zIndex: 2e9, // The z-index (defaults to 2000000000)
+		  top: '50%', // Top position relative to parent
+		  left: '50%' // Left position relative to parent
+		};
+		var target = document.getElementById('content');
+		spinner = new Spinner(opts).spin(target);
+		isSpinning = true;
+	}
 	
-	$('#submitButton').on('click',function(){
-		//alert($('#query').val());
-		$.post('{{ url_for('submitQuery') }}',{query:$('#query').val()},function(data){
+	function checkForStreams()
+	{
+		//if(isSpinning)
+		//{
+		//	isSpinning = false;
+		//	spinner.stop();	
+		//	clearTimeout(id);
+		//	noOfAttempts = 0;
+		//}
+		//initiateSpinner();
+		$.post('{{ url_for('submitQuery') }}',{query:$('#query').val()},manageResponse);
+	  
+	}	
+	
+	function setSpinner()
+	{
+		if(spinner == null)
+			initiateSpinner();
+		else if(isSpinning == false)
+		{
+			isSpinning  = true;
+			spinner.spin();
+			console.log('isSpinning St' + isSpinning);	
+					
+		}	
+		++noOfAttempts;
+	}
+	
+	function stopSpinner()
+	{
+		noOfAttempts = 0;
+		clearTimeout(id);
+		if(spinner != null)
+			spinner.stop();
+		isSpinning = false;
+		spinner = null;
+	}
+	
+	function showMessage(message)
+	{
+		$('#table-block').html('<p id="message"></p>');
+		$('#message').append(message);	
+	}
+	
+	function manageResponse(data)
+	{
 		console.log(data);
-			
+		console.log(noOfAttempts);	
 		
 		var parsedData = $.parseJSON(data);
 		if(parsedData.count == 0)
 		{
-			var text = parsedData.message;
-			$('#table-block').html('<p id="message"></p>');
-			$('#message').append(text)	
+			var status  = parsedData.status;
+			
+			if(status != 200 && noOfAttempts == 0) 
+			{	
+				stopSpinner();
+				var text = parsedData.message;
+				showMessage(text)	
+			}
+			else if(isSpinning && noOfAttempts >= 2)
+			{
+				stopSpinner();
+				var text = "Please check back in a couple of minutes."
+				showMessage(text);
+				
+			}
+			else
+			{
+				console.log(isSpinning);
+				setSpinner();
+				id = setTimeout(checkForStreams, 10000);
+				//POST method again unless timeout and show message
+			}	
+			
 		}
 		else
 		{
-		
-		$('#table-block').html('<table id="query-list"><thead><tr><th>Query</th><th>Stream ID</th></tr></thead><tbody></tbody></table>');
-		$('#query-list > tbody:last').html('<tbody></tbody>');
+			clearTimeout(id);
+			noOfAttempts = 0;
+			if(isSpinning)
+			{
+			
+				isSpinning = false;
+				spinner.stop();
+			}	
+			
+			$('#table-block').html('<table id="query-list"><thead><tr><th>Query</th><th>Stream ID</th></tr></thead><tbody></tbody></table>');
+			$('#query-list > tbody:last').html('<tbody></tbody>');
 			$.each(parsedData.queries,function(i,item){
-				console.log(item.stream_id);
-				//alert(item.stream_id)
-				var x = item.stream_id;
-			    $('#query-list > tbody:last').append('<tr><td>'+item.query_item+'</td><td><a href="{{ url_for('stream',stream_id='+x+') }}">'+item.rtmp_url+'</a></td></tr>');
+			console.log(item.stream_id);
+			$('#query-list > tbody:last').append('<tr><td>'+item.query_item+'</td><td><a href="'+item.stream_url+'">'+item.rtmp_url+'</a></td></tr>');
 			  });
+					
+			
+			
 			
 		}
-			
-		});	
+	  }
+	
+	
+	$('#submitButton').on('click', function() {
+	showMessage('');
+	checkForStreams();
+	});	
 		
-	});
+	//});
 	
 	
 	</script>
