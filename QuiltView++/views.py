@@ -186,7 +186,7 @@ def checkRequestHeaders(checkContentType = None):
 		if "Content_Type" in request.headers:
 			contentType = request.headers['Content_Type']
 			
-		if (devid is None or not devid or len(devid) < 16) \
+		if (devid is None or not devid or len(devid) < 14) \
 			and ((checkContentType is not None and contentType != "application/x-www-form-urlencoded") \
 			or checkContentType is None):
 			return errorResponse()
@@ -279,7 +279,7 @@ def postReply():
 			if queryStatus == "true":
 				streamId = updateLiveStreamers(ip, queryId)
 				if streamId > 0:
-					return createPostReplyResponse(streamId)			
+					return createPostReplyResponse(None,streamId)			
 			
 			else:	
 				resp = Response(response=None, status=204, mimetype=None)
@@ -291,7 +291,7 @@ def postReply():
 		
 		
 def updateLiveStreamers(ip, queryId):
-	rtsp_url = "rtsp://%s:1234"  % (ip)
+	rtsp_url = "rtsp://%s:554"  % (ip)
 	# add stream id to generate unique url
 	rtmp_url = "rtmp://%s:1935/mytv/%s" % (STREAM_SERVER, uuid.uuid4())
 	print rtsp_url
