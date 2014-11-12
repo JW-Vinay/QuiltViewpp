@@ -25,3 +25,5 @@ table,th,td	{border:1px solid black;}
 td		{padding: 0.5em; font-size: 0.9em; color:#000000}
 
 #content 	{padding: 0.5em; margin: 1em auto; width: auto; position: relative; height:auto;}
+#videobody	{ font-family: sans-serif; background: #000000; }
+#livevideo	{ margin: auto; }
