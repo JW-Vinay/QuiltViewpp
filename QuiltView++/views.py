@@ -200,14 +200,17 @@ def getNoSubscribers():
 	if request.method == 'POST':
 		streamName = request.form['name']
 		callType = request.form['call']
+		#print "name ", streamName
 		streamUrl = "rtmp://%s:1935/mytv/%s" % (STREAM_SERVER, streamName)
-		sreamId = "SELECT query_id FROM live_streams WHERE rtmp_url='%s';" %(streamUrl)
+		streamId = "SELECT query_id FROM live_streams WHERE rtmp_url='%s'" %(streamUrl)
+		#print "stream id ", streamId
 		if callType == "play":
-			queryString  = "UPDATE queries SET no_subscribers = no_subscribers +1 WHERE query_id=(%s);" %(streamId)
+			queryString  = "UPDATE queries SET no_subscribers = no_subscribers +1 WHERE query_id= (%s);" %(streamId)
 		else:
-			queryString  = "UPDATE queries SET no_subscribers = no_subscribers -1 WHERE query_id=(%s);" %(streamId)
+			queryString  = "UPDATE queries SET no_subscribers = no_subscribers -1 WHERE query_id= (%s);" %(streamId)
+		#print "query  ", queryString
 		cursor = mysql.connect().cursor()
-		cursor.execute(query)	
+		cursor.execute(queryString)	
 		cursor.connection.commit()
 		return ""
 	elif request.method == 'GET':
@@ -216,7 +219,7 @@ def getNoSubscribers():
 			return val
 		else:
 			query_id = request.args['qid']
-			queryString = "SELECT * FROM queries WHERE query_id=%s;" %(query_id) 	
+			queryString = "SELECT * FROM queries WHERE query_id= %s;" %(query_id) 	
 			cursor = mysql.connect().cursor()
 			cursor.execute(queryString)
 			data = generateJsonForQueries(cursor)
@@ -291,9 +294,10 @@ def postReply():
 		
 		
 def updateLiveStreamers(ip, queryId):
-	rtsp_url = "rtsp://%s:554"  % (ip)
+	rtsp_url = "rtsp://%s:1234"  % (ip)
 	# add stream id to generate unique url
-	rtmp_url = "rtmp://%s:1935/mytv/%s" % (STREAM_SERVER, uuid.uuid4())
+	uuidVal = uuid.uuid4()
+	rtmp_url = "rtmp://%s:1935/mytv/%s" % (STREAM_SERVER, uuidVal)
 	print rtsp_url
 	print rtmp_url
 	cursor = mysql.connect().cursor()
@@ -302,7 +306,8 @@ def updateLiveStreamers(ip, queryId):
 	cursor.connection.commit()
 	if cursor.rowcount == 1: 
 		#start FFMPEG
-		pid = initiateFFMPEG(rtsp_url, rtmp_url)
+		pid = initiateFFMPEG(rtsp_url, rtmp_url, uuidVal)
+		#pid = 123456
 		query = "INSERT into live_streams(query_id, rtmp_url, rtsp_url, is_stream_active, pid) VALUES('%s','%s','%s','%s', '%s');" % 			(queryId, rtmp_url, rtsp_url, 1, pid)
 		cursor.execute(query)
     		cursor.connection.commit()
@@ -359,8 +364,11 @@ def killFFMPEG(pid):
 def call_command(command):
 	return    subprocess.Popen(command.split(' ')).pid
 		
-def initiateFFMPEG(rtsp_url, rtmp_url):
-	return call_command("avconv -i %s -ar 44100 -f flv %s" % (rtsp_url, rtmp_url))
+def initiateFFMPEG(rtsp_url, rtmp_url, uuidVal):
+	#test =  "avconv -i %s -ar 44100 -r 30 -vsync cfr -q 30 -fflags nobuffer -f flv %s" % (rtsp_url, rtmp_url)
+	#print test
+	rtmp_url = "rtmp://%s:1935/mytv/%s" % (STREAM_SERVER_IP, uuidVal)
+	return call_command("avconv -i %s -ar 44100 -r 30 -vsync cfr -fflags nobuffer -f flv %s" % (rtsp_url, rtmp_url))
 		
 @app.route('/stream/<int:stream_id>')
 def stream(stream_id, rtmp_url=None, rtsp_url=None):
@@ -376,7 +384,9 @@ def stream(stream_id, rtmp_url=None, rtsp_url=None):
 	if data is not None:
 		rtmp_url = data[0]
 		streamName = rtmp_url[rtmp_url.rfind("/")+1:]
-		print streamName
+		rtmp_url = rtmp_url[0:rtmp_url.rfind("/")+1]
+		print "stream name", streamName
+		print "rtmp ",rtmp_url
 		#return render_template('index.html', stream_name="vinay-phone", stream_url="rtmp://%s:1935/mytv/" % (STREAM_SERVER))
 		return render_template('index.html', stream_name=streamName, stream_url=rtmp_url)
 	else:
