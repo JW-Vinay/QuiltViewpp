@@ -388,7 +388,8 @@ def stream(stream_id, rtmp_url=None, rtsp_url=None):
 		print "stream name", streamName
 		print "rtmp ",rtmp_url
 		#return render_template('index.html', stream_name="vinay-phone", stream_url="rtmp://%s:1935/mytv/" % (STREAM_SERVER))
-		return render_template('index.html', stream_name=streamName, stream_url=rtmp_url)
+		#return render_template('index.html', stream_name=streamName, stream_url=rtmp_url)
+		return render_template('jwplayback.html', stream_name=streamName, stream_url=rtmp_url)
 	else:
 		return redirect(url_for('showHome')) 
 

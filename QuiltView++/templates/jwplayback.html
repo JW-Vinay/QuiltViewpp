@@ -1,0 +1,22 @@
+<html>
+	<head>
+		<title>QuiltView++ Stream</title>
+		<script type="text/javascript" src="{{ url_for('static', filename='js/jwplayer.js') }}"></script>
+		<!--<script type="text/javascript">jwplayer.key="xqT/Aq7evAsn1hNxj5XxmZGR7Ozo0afI3N0FgQ==";</script>-->
+	</head>
+
+	<body>
+		<div id="livevideo">Loading live stream...</div>
+
+
+		<script type="text/javascript">
+    			jwplayer("livevideo").setup({
+        			file:  "{{ stream_url }}/{{ stream_name }}",
+        			image: "{{ url_for('static', filename='img/atelier-woman-wearing-futuristic-glasses.jpg') }}",
+				stretching: "none",
+				displaytitle: "Live Stream...",
+				flashplayer: "{{ url_for('static', filename='swf/jwplayer.flash.swf') }}"
+    			});
+		</script>
+	</body>
+</html>
