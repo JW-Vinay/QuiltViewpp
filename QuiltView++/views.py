@@ -338,7 +338,7 @@ def getQueries():
 		
 	cursor = mysql.connect().cursor()
 	#print "SELECT * from queries where TIME_TO_SEC(timediff(now(),timestamp))<=%s ORDER BY timestamp DESC;"
-	cursor.execute("SELECT * from queries where TIME_TO_SEC(timediff(now(),timestamp))<=%s ORDER BY timestamp DESC;" %(20))
+	cursor.execute("SELECT * from queries where TIME_TO_SEC(timediff(now(),timestamp))<=%s ORDER BY timestamp DESC;" %(30))
 	queryList = generateJsonForQueries(cursor)    	
 	if queryList:
 		#resp = Response(json.dumps(queryList), status=200, mimetype='application/json')

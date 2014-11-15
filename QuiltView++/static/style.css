@@ -26,5 +26,5 @@ td		{padding: 0.5em; font-size: 0.9em; color:#000000}
 
 #content 	{padding: 0.5em; margin: 1em auto; width: auto; position: relative; height:auto;}
 #videobody	{ font-family: sans-serif; background: #000000; }
-#livevideo	{ margin: auto; display: inline-block;}
-#livevideo_wrapper {margin: auto;}
+#livevideo	{ top: 50%; position: relative; margin: auto; display: inline-block;}
+#livevideo_wrapper {position: relative; top: 50%; margin: auto;}

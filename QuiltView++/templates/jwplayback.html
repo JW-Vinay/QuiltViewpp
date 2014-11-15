@@ -14,11 +14,13 @@
     			jwplayer("livevideo").setup({
         			file:  "{{ stream_url }}{{ stream_name }}",
         			image: "{{ url_for('static', filename='img/atelier-woman-wearing-futuristic-glasses.jpg') }}",
-				stretching: "uniform",
+				stretching: "fill",
 				displaytitle: "Live Stream...",
 				 rtmp: {
       					  bufferlength: 0.1
    				 },
+				height: 360,
+				width: 640,
 				flashplayer: "{{ url_for('static', filename='swf/jwplayer.flash.swf') }}"
     			});
 		</script>
