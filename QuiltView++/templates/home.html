@@ -44,7 +44,7 @@
 		isSpinning = true;
 	}
 	
-	function checkForStreams()
+	function checkForStreams(isRefresh)
 	{
 		//if(isSpinning)
 		//{
@@ -54,7 +54,7 @@
 		//	noOfAttempts = 0;
 		//}
 		//initiateSpinner();
-		$.post('{{ url_for('submitQuery') }}',{query:$('#query').val()},manageResponse);
+		$.post('{{ url_for('submitQuery') }}',{query:$('#query').val(), refresh_status: isRefresh},manageResponse);
 	  
 	}	
 	
@@ -115,7 +115,9 @@
 			{
 				console.log(isSpinning);
 				setSpinner();
-				id = setTimeout(checkForStreams, 10000);
+				id = setTimeout(function() {
+					checkForStreams(true);
+					}, 10000);
 				//POST method again unless timeout and show message
 			}	
 			
@@ -147,7 +149,7 @@
 	
 	$('#submitButton').on('click', function() {
 	showMessage('');
-	checkForStreams();
+	checkForStreams(false);
 	});	
 		
 	//});
