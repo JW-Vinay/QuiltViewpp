@@ -54,6 +54,7 @@ def submitQuery():
 		print query, isRefresh
 		if (query is not None) and (query != ''):
 	    		cursor = mysql.connect().cursor()
+			query = query.strip()
 	    		queryString = "SELECT a.query_id, a.query_item, b.stream_id, b.is_stream_active, b.rtmp_url FROM queries a INNER JOIN live_streams b ON a.query_id = b.query_id WHERE is_stream_active=true and a.query_item='%s';" % (query)
 	    		cursor.execute(queryString)
 	    		if cursor.fetchone() is None:
