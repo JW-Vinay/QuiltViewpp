@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+     <item
+        android:id="@+id/view"
+        android:icon="@drawable/ic_forward_50"
+        android:orderInCategory="1"
+        android:title="@string/tag_view"/>
+     
+     <item
+        android:id="@+id/stop"
+        android:orderInCategory="2"
+        android:icon="@drawable/ic_no_50"
+        android:title="@string/tag_stop"/>
+
+</menu>
