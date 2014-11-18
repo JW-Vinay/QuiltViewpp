@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Quiltview++</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="loading_msg">Loading..</string>
+    <string name="share_view">Share My View</string>
+    <string name="network_error_msg">No network available</string>
+    <string name="generic_error_msg">Some error has occurred. Please try again later</string>
+    <string name="tag_query_msg">You have $KEY_QUERY_COUNT$ new stream requests</string>
+    <string name="tag_last_updated"></string>
+    <string name="tag_view">View</string>
+    <string name="tag_dismiss">Dismiss</string>
+    <string name="tag_stop">Stop</string>
+    <string name="tag_start">Start</string>
+    <string name="tag_quit">Quit Streaming</string>
+    <string name="tag_info_text">Tap for options</string>
+	<string name="tag_empty_response">User declined request</string>
+	<string name="tag_quit_stream">stream disconnected successfully</string>
+	<string name="tag_stream">Start Streaming</string>
+		
+	<string name="tag_welcome_msg">Welcome to QuiltView++</string>
+	<string name="tag_welocme_info">Tap to enable/disable Streaming requests</string>
+	<string name="tag_subscribers">Subscribers:</string>
+	<string name="tag_empty_text">No more cards!</string>
+	<string name="tag_current_timestamp">just now</string>
+	
+	<string name="tag_query_invalid_msg">Query has timed out!</string>
+</resources>
